@@ -13,7 +13,7 @@ body{background:#080814;font-family:'DM Sans','Segoe UI',sans-serif;color:#e0e0f
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .fadeUp{animation:fadeUp .4s ease}
-input,textarea,button{font-family:inherit}
+input,button{font-family:inherit}
 input:focus{outline:2px solid #7f5af040;border-color:#7f5af0!important}
 .tab-btn{padding:10px 20px;border-radius:10px;border:none;background:transparent;color:#606080;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;font-family:inherit}
 .tab-btn.active{background:#1e1e40;border-bottom-color:#7f5af0;color:#c0b0ff}
@@ -22,11 +22,11 @@ input:focus{outline:2px solid #7f5af040;border-color:#7f5af0!important}
 .btn-primary{width:100%;padding:13px 0;border-radius:12px;border:none;background:linear-gradient(135deg,#7f5af0,#2cb67d);color:#fff;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;font-family:inherit}
 .btn-primary:disabled{background:#2a2a4a;color:#505070;cursor:not-allowed}
 .btn-primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
-.card{background:#0d0d22;border:1px solid #2a2a4a;border-radius:14px;padding:18px;margin-bottom:10px;transition:border-color .2s}
+.card{background:#0d0d22;border:1px solid #2a2a4a;border-radius:14px;padding:18px;margin-bottom:10px}
 .skel{background:linear-gradient(90deg,#1a1a2e 25%,#252540 50%,#1a1a2e 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
 .dir-card{background:#0d0d1a;border:1px solid #2a2a4a;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:all .2s;cursor:pointer}
 .dir-card.checked{background:#0d1a0d;border-color:#2a5a2a}
-.checkbox{width:20px;height:20px;border-radius:6px;flex-shrink:0;border:2px solid #3a3a6a;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s;background:#1a1a3a;cursor:pointer}
+.checkbox{width:20px;height:20px;border-radius:6px;flex-shrink:0;border:2px solid #3a3a6a;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s;background:#1a1a3a}
 .checkbox.checked{background:#2cb67d;border-color:#2cb67d;color:#fff}
 .filter-btn{padding:5px 12px;border-radius:99px;border:1px solid #2a2a4a;background:#1a1a3a;color:#606080;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
 .filter-btn.active{background:#7f5af0;border-color:#7f5af0;color:#fff}
@@ -39,16 +39,14 @@ input:focus{outline:2px solid #7f5af040;border-color:#7f5af0!important}
 .spinner{width:16px;height:16px;border:2px solid #ffffff40;border-top:2px solid #fff;border-radius:50%;animation:spin .8s linear infinite}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .modal-overlay{position:fixed;inset:0;background:#000000aa;display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
-.modal{background:#0d0d22;border:1px solid #3a3a6a;border-radius:20px;padding:28px;max-width:480px;width:100%}
+.modal{background:#0d0d22;border:1px solid #3a3a6a;border-radius:20px;padding:28px;max-width:500px;width:100%}
 @media(max-width:700px){.grid2{grid-template-columns:1fr}.input-row{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="modal-root"></div>
-
 <script>
-// ─── Citation Directories ────────────────────────────────────────────────────
 const CITATION_DIRS=[
   {name:"Google Business Profile",url:"https://business.google.com",da:100,free:true,cat:"Core"},
   {name:"Bing Places",url:"https://www.bingplaces.com",da:95,free:true,cat:"Core"},
@@ -78,116 +76,94 @@ const CITATION_DIRS=[
   {name:"Houzz",url:"https://www.houzz.com",da:85,free:true,cat:"Home"},
   {name:"Thumbtack",url:"https://www.thumbtack.com",da:75,free:true,cat:"Services"},
   {name:"n49",url:"https://www.n49.com",da:50,free:true,cat:"Directory"},
-  {name:"MapQuest Business",url:"https://listings.mapquest.com",da:84,free:true,cat:"Local"},
   {name:"Nextdoor Business",url:"https://business.nextdoor.com",da:78,free:true,cat:"Local"},
+  {name:"MapQuest Business",url:"https://listings.mapquest.com",da:84,free:true,cat:"Local"},
 ];
 const CAT_COLORS={Core:"#f0a030",Reviews:"#e05050",Social:"#4090f0",Directory:"#7f5af0",Local:"#2cb67d",B2B:"#c060e0",Trust:"#f05090",Travel:"#30c0b0",Food:"#f07030",Home:"#60b040",Services:"#a0a030"};
 
-// ─── State ───────────────────────────────────────────────────────────────────
-let state={
-  url:"",niche:"",location:"",apiKey:"",
-  loading:false,progress:"",result:null,
-  tab:"tracker",openComp:-1,
-  filterCat:"All",filterFree:false,
-  checked:{},showApiModal:false,
-};
+let state={url:"",niche:"",location:"",apiKey:"",loading:false,progress:"",result:null,tab:"tracker",openComp:-1,filterCat:"All",filterFree:false,checked:{},showApiModal:false};
 function setState(p){Object.assign(state,p);render();}
 
-// ─── API Call ────────────────────────────────────────────────────────────────
-async function callClaude(userMsg,systemMsg){
+async function callGemini(prompt){
   const key=state.apiKey.trim();
   if(!key) throw new Error("NO_KEY");
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-api-key":key,
-      "anthropic-version":"2023-06-01",
-      "anthropic-dangerous-direct-browser-access":"true"
-    },
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",
-      max_tokens:1000,
-      system:systemMsg,
-      messages:[{role:"user",content:userMsg}]
-    })
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:1500}})
   });
-  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API Error");}
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API Error "+res.status);}
   const d=await res.json();
-  return (d.content||[]).map(b=>b.text||"").join("");
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||"";
 }
 
 async function analyze(){
   if(!state.url.trim()||state.loading) return;
   if(!state.apiKey.trim()){setState({showApiModal:true});return;}
-
   setState({loading:true,result:null,progress:"Website analyze ho rahi hai…",tab:"competitors"});
-  const sys=`You are an expert SEO analyst. Return ONLY valid JSON, absolutely no markdown, no explanation, no code fences:
-{"siteInfo":{"title":"site name","niche":"detected niche","summary":"2-sentence description"},"competitors":[{"domain":"competitor.com","da":65,"reason":"why they compete","citations":["Google Business Profile","Yelp","Facebook Business","Yellow Pages","Bing Places"],"strengths":"what they do well","gaps":"citation sources they are missing"}],"citationStrategy":{"priority":["top 5 citation sources"],"insight":"2-3 sentences of actionable advice"},"quickWins":["win1","win2","win3","win4"]}
-Generate 5 realistic competitors. Return ONLY the JSON object, nothing else.`;
+  const prompt=`You are an expert SEO analyst. Analyze this website and return ONLY a valid JSON object with no markdown, no code fences, no explanation.
+
+Website: ${state.url}
+Niche: ${state.niche||"general business"}
+Location: ${state.location||"not specified"}
+
+Return this exact JSON structure:
+{"siteInfo":{"title":"site name","niche":"detected niche","summary":"2 sentence description"},"competitors":[{"domain":"competitor.com","da":65,"reason":"why they compete","citations":["Google Business Profile","Yelp","Facebook Business","Yellow Pages","Bing Places"],"strengths":"what they do well in local SEO","gaps":"citation sources they are missing"},{"domain":"competitor2.com","da":58,"reason":"why they compete","citations":["Google Business Profile","Facebook Business","Trustpilot"],"strengths":"their strengths","gaps":"their gaps"},{"domain":"competitor3.com","da":72,"reason":"why they compete","citations":["Google Business Profile","Yelp","LinkedIn Company","Yellow Pages"],"strengths":"their strengths","gaps":"their gaps"},{"domain":"competitor4.com","da":45,"reason":"why they compete","citations":["Google Business Profile","Bing Places"],"strengths":"their strengths","gaps":"their gaps"},{"domain":"competitor5.com","da":61,"reason":"why they compete","citations":["Google Business Profile","Yelp","Facebook Business","Foursquare","Manta"],"strengths":"their strengths","gaps":"their gaps"}],"citationStrategy":{"priority":["Google Business Profile","Yelp","Facebook Business","Bing Places","LinkedIn Company"],"insight":"2-3 sentences of specific actionable citation advice for this niche and location"},"quickWins":["specific quick win 1","specific quick win 2","specific quick win 3","specific quick win 4"]}
+
+Return ONLY the JSON. No other text.`;
   try{
     setState({progress:"Competitors dhundh rahe hain…"});
-    const raw=await callClaude(`Website: ${state.url}\nNiche: ${state.niche||"general"}\nLocation: ${state.location||"not specified"}`,sys);
-    const clean=raw.replace(/```json|```|^\s*json/gi,"").trim();
-    const jsonStart=clean.indexOf("{");
-    const jsonEnd=clean.lastIndexOf("}");
-    const jsonStr=clean.slice(jsonStart,jsonEnd+1);
-    const parsed=JSON.parse(jsonStr);
+    const raw=await callGemini(prompt);
+    const clean=raw.replace(/```json|```/gi,"").trim();
+    const s=clean.indexOf("{"),e=clean.lastIndexOf("}");
+    const parsed=JSON.parse(clean.slice(s,e+1));
     setState({result:parsed,loading:false,progress:"",tab:"competitors"});
   }catch(e){
     console.error(e);
     setState({loading:false,progress:""});
     if(e.message==="NO_KEY"){setState({showApiModal:true});}
-    else if(e.message.includes("401")||e.message.includes("auth")){
+    else if(e.message.includes("400")||e.message.includes("API_KEY")||e.message.includes("key")){
       setState({showApiModal:true,apiKey:""});
       showToast("API Key galat hai — dobara enter karo","error");
-    } else {
-      showToast("Error: "+e.message,"error");
-    }
+    } else showToast("Error: "+e.message,"error");
   }
 }
 
 function showToast(msg,type="info"){
   const t=document.createElement("div");
-  t.style.cssText=`position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${type==="error"?"#3a1a1a":"#1a3a1a"};border:1px solid ${type==="error"?"#6a2a2a":"#2a6a2a"};color:${type==="error"?"#f08080":"#80d080"};padding:12px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;font-family:inherit`;
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3500);
+  t.style.cssText=`position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${type==="error"?"#3a1a1a":"#1a3a1a"};border:1px solid ${type==="error"?"#6a2a2a":"#2a6a2a"};color:${type==="error"?"#f08080":"#80d080"};padding:12px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;font-family:inherit;white-space:nowrap`;
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
 
-// ─── Render ──────────────────────────────────────────────────────────────────
 function render(){
   document.getElementById("root").innerHTML=buildHTML();
-  if(state.showApiModal) document.getElementById("modal-root").innerHTML=buildApiModal();
-  else document.getElementById("modal-root").innerHTML="";
+  document.getElementById("modal-root").innerHTML=state.showApiModal?buildModal():"";
   bindEvents();
 }
 
-function buildApiModal(){
+function buildModal(){
   return `<div class="modal-overlay" id="modal-overlay">
     <div class="modal">
-      <div style="font-size:28px;margin-bottom:12px;text-align:center">🔑</div>
-      <div style="font-weight:800;font-size:18px;color:#c0b0ff;margin-bottom:8px;text-align:center;font-family:'Syne',sans-serif">Anthropic API Key</div>
-      <div style="color:#707090;font-size:13px;line-height:1.7;margin-bottom:20px;text-align:center">
-        Tool ke liye apni Anthropic API key daalo.<br/>
-        Key sirf tumhare browser mein rahegi — kahi save nahi hoti.
-      </div>
-      <div style="margin-bottom:8px">
-        <div style="font-size:11px;color:#606080;font-weight:700;margin-bottom:6px;letter-spacing:1px">API KEY</div>
-        <input id="api-key-input" type="password" value="${state.apiKey}" placeholder="sk-ant-api03-..."
-          style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
-      </div>
-      <div style="background:#13132e;border-radius:10px;padding:12px;margin-bottom:16px">
-        <div style="color:#2cb67d;font-size:12px;font-weight:700;margin-bottom:6px">Key kahan se milegi?</div>
-        <div style="color:#608060;font-size:12px;line-height:1.7">
-          1. <a href="https://console.anthropic.com" target="_blank" style="color:#7f5af0">console.anthropic.com</a> pe jao<br/>
-          2. Login karo → "API Keys" → "Create Key"<br/>
-          3. Copy karo aur yahan paste karo
+      <div style="font-size:32px;text-align:center;margin-bottom:12px">🔑</div>
+      <div style="font-weight:800;font-size:20px;color:#c0b0ff;text-align:center;margin-bottom:8px;font-family:'Syne',sans-serif">Gemini API Key</div>
+      <div style="color:#707090;font-size:13px;line-height:1.7;text-align:center;margin-bottom:20px">Google ka free API — credit card nahi chahiye!<br/>Key sirf tumhare browser mein rahegi.</div>
+      <div style="background:#0a1a0a;border:1px solid #1e4a1e;border-radius:12px;padding:14px;margin-bottom:16px">
+        <div style="color:#2cb67d;font-size:12px;font-weight:800;margin-bottom:8px;letter-spacing:1px">🆓 FREE KEY KAISE MILEGI — 1 MINUTE</div>
+        <div style="color:#608060;font-size:13px;line-height:1.8">
+          1. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#4fc080;font-weight:700">aistudio.google.com/app/apikey</a> kholo<br/>
+          2. Google account se login karo<br/>
+          3. <b style="color:#80d080">"Create API Key"</b> dabao<br/>
+          4. Key copy karo — paste karo neeche ✅
         </div>
       </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:#606080;font-weight:700;margin-bottom:6px;letter-spacing:1px">APNI GEMINI API KEY</div>
+        <input id="api-key-input" type="password" value="${state.apiKey}" placeholder="AIzaSy..."
+          style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
+      </div>
       <div style="display:flex;gap:10px">
-        <button id="btn-save-key" class="btn-primary" style="flex:1">Save & Analyze</button>
-        <button id="btn-close-modal" style="flex:0 0 80px;padding:13px 0;border-radius:12px;border:1px solid #3a3a6a;background:transparent;color:#606080;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>
+        <button id="btn-save-key" class="btn-primary">✅ Save & Analyze</button>
+        <button id="btn-close-modal" style="flex:0 0 90px;padding:13px 0;border-radius:12px;border:1px solid #3a3a6a;background:transparent;color:#606080;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>
       </div>
     </div>
   </div>`;
@@ -197,14 +173,12 @@ function buildHTML(){
   const s=state;
   const cats=["All",...new Set(CITATION_DIRS.map(d=>d.cat))];
   const filtered=CITATION_DIRS.filter(d=>{
-    if(s.filterCat!=="All"&&d.cat!==s.filterCat) return false;
-    if(s.filterFree&&!d.free) return false;
+    if(s.filterCat!=="All"&&d.cat!==s.filterCat)return false;
+    if(s.filterFree&&!d.free)return false;
     return true;
   });
   const checkedCount=Object.values(s.checked).filter(Boolean).length;
-
-  return `
-<div style="min-height:100vh">
+  return `<div style="min-height:100vh">
   <div style="background:linear-gradient(180deg,#0d0d24,#080814);border-bottom:1px solid #1e1e3a;padding:0 24px">
     <div style="max-width:1100px;margin:0 auto;padding:20px 0 0">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
@@ -213,44 +187,37 @@ function buildHTML(){
           <div style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;background:linear-gradient(90deg,#c0b0ff,#2cb67d);-webkit-background-clip:text;-webkit-text-fill-color:transparent">CiteSpy Pro</div>
           <div style="font-size:12px;color:#505080">Competitor & Citation Intelligence Tool</div>
         </div>
-        <button id="btn-api-settings" style="background:#1a1a3a;border:1px solid #3a3a6a;border-radius:10px;padding:8px 14px;color:${s.apiKey?'#2cb67d':'#808090'};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
-          ${s.apiKey?'✅ API Connected':'🔑 API Key Setup'}
+        <button id="btn-api-settings" style="background:${s.apiKey?'#0a2a0a':'#1a1a3a'};border:1px solid ${s.apiKey?'#2a6a2a':'#3a3a6a'};border-radius:10px;padding:8px 14px;color:${s.apiKey?'#2cb67d':'#808090'};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+          ${s.apiKey?'✅ Gemini Connected':'🔑 API Key Setup'}
         </button>
       </div>
-
       <div style="background:#0d0d22;border:1px solid #2a2a4a;border-radius:20px;padding:24px;margin-bottom:20px">
         <div class="input-row" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:14px">
           <div>
             <div style="font-size:11px;color:#606080;font-weight:700;margin-bottom:6px;letter-spacing:1px">APNI WEBSITE</div>
-            <input id="inp-url" value="${s.url}" placeholder="https://yoursite.com"
-              style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
+            <input id="inp-url" value="${s.url}" placeholder="https://yoursite.com" style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
           </div>
           <div>
             <div style="font-size:11px;color:#606080;font-weight:700;margin-bottom:6px;letter-spacing:1px">NICHE</div>
-            <input id="inp-niche" value="${s.niche}" placeholder="e.g. Digital Marketing"
-              style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
+            <input id="inp-niche" value="${s.niche}" placeholder="e.g. Digital Marketing" style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
           </div>
           <div>
             <div style="font-size:11px;color:#606080;font-weight:700;margin-bottom:6px;letter-spacing:1px">LOCATION</div>
-            <input id="inp-loc" value="${s.location}" placeholder="e.g. Lahore, Pakistan"
-              style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
+            <input id="inp-loc" value="${s.location}" placeholder="e.g. Lahore, Pakistan" style="width:100%;background:#13132e;border:1px solid #2a2a4a;border-radius:10px;padding:10px 14px;color:#e0e0f0;font-size:14px"/>
           </div>
         </div>
         <button id="btn-analyze" class="btn-primary" ${s.loading?"disabled":""}>
           ${s.loading?`<div class="spinner"></div>${s.progress}`:'🔍 Analyze Karo — Competitors & Citations Dhundho'}
         </button>
       </div>
-
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         ${s.result?`
         <button class="tab-btn ${s.tab==='competitors'?'active':''}" data-tab="competitors">🏆 Competitors<span class="badge">${s.result.competitors?.length||0}</span></button>
-        <button class="tab-btn ${s.tab==='strategy'?'active':''}" data-tab="strategy">🎯 Citation Strategy</button>
-        `:""}
+        <button class="tab-btn ${s.tab==='strategy'?'active':''}" data-tab="strategy">🎯 Citation Strategy</button>`:""}
         <button class="tab-btn ${s.tab==='tracker'?'active':''}" data-tab="tracker">📋 Citation Tracker<span class="badge">${checkedCount}/${CITATION_DIRS.length}</span></button>
       </div>
     </div>
   </div>
-
   <div style="max-width:1100px;margin:0 auto;padding:28px 24px">
     ${s.loading?`<div class="fadeUp">${[1,2,3].map(()=>`<div class="card" style="display:flex;gap:14px;align-items:center"><div class="skel" style="width:36px;height:36px;border-radius:10px"></div><div style="flex:1"><div class="skel" style="width:55%;height:14px;margin-bottom:8px"></div><div class="skel" style="width:75%;height:11px"></div></div><div class="skel" style="width:60px;height:28px;border-radius:8px"></div></div>`).join("")}</div>`:""}
     ${!s.loading&&s.result&&s.tab==='competitors'?renderCompetitors():""}
@@ -278,9 +245,8 @@ function renderCompetitors(){
 }
 
 function renderCompCard(c,i){
-  const open=state.openComp===i;
-  const hue=i*47+200;
-  return `<div class="comp-card ${open?'open':''}" >
+  const open=state.openComp===i;const hue=i*47+200;
+  return `<div class="comp-card ${open?'open':''}">
     <div class="comp-header" data-comp-toggle="${i}">
       <div style="width:36px;height:36px;border-radius:10px;flex-shrink:0;background:hsl(${hue},60%,15%);color:hsl(${hue},80%,70%);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">#${i+1}</div>
       <div style="flex:1;min-width:0"><div style="color:#e0e0f0;font-weight:700;font-size:14px">${c.domain}</div>
@@ -307,7 +273,6 @@ function renderStrategy(){
       <div style="color:#606080;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">PEHLE YE 5 CITATIONS BANAO:</div>
       ${(r.citationStrategy?.priority||[]).map((p,i)=>`<div class="priority-item"><div style="width:28px;height:28px;border-radius:8px;flex-shrink:0;background:hsl(${i*40+240},60%,15%);color:hsl(${i*40+240},80%,70%);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">${i+1}</div><span style="color:#c0c0e0;font-weight:600;font-size:13px">${p}</span></div>`).join("")}
     </div>
-    <div style="color:#606080;font-size:11px;font-weight:700;letter-spacing:2px;margin-bottom:12px">COMPETITOR CITATION ANALYSIS</div>
     ${(r.competitors||[]).slice(0,3).map(c=>`<div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:#c0c0e0;font-weight:700">${c.domain}</span><span style="color:#2cb67d;font-size:12px">DA ${c.da}</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${(c.citations||[]).map(ct=>`<span style="background:#1a1a3a;border-radius:6px;padding:2px 8px;font-size:11px;color:#8080b0">${ct}</span>`).join("")}</div>
@@ -322,7 +287,7 @@ function renderTracker(filtered,checkedCount,cats){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
       <div><div style="color:#e0e0f0;font-weight:800;font-size:15px;font-family:'Syne',sans-serif">Free Citation Directories</div>
       <div style="color:#505080;font-size:12px;margin-top:2px">${checkedCount} done · ${CITATION_DIRS.length-checkedCount} remaining</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px">
         <button id="btn-free" class="filter-btn ${s.filterFree?'active':''}">🆓 Free Only</button>
         <button id="btn-reset-chk" class="filter-btn">↺ Reset</button>
       </div>
@@ -335,8 +300,7 @@ function renderTracker(filtered,checkedCount,cats){
     </div>
     <div class="grid2">
       ${filtered.map(d=>{
-        const color=CAT_COLORS[d.cat]||"#7f5af0";
-        const chk=!!s.checked[d.name];
+        const color=CAT_COLORS[d.cat]||"#7f5af0";const chk=!!s.checked[d.name];
         return `<div class="dir-card ${chk?'checked':''}" data-dir="${d.name}">
           <div class="checkbox ${chk?'checked':''}">${chk?'✓':''}</div>
           <div style="flex:1;min-width:0">
@@ -354,11 +318,9 @@ function renderTracker(filtered,checkedCount,cats){
   </div>`;
 }
 
-// ─── Events ──────────────────────────────────────────────────────────────────
 function bindEvents(){
   const $=id=>document.getElementById(id);
   const on=(id,ev,fn)=>{const el=$(id);if(el)el.addEventListener(ev,fn);};
-
   on("inp-url","input",e=>state.url=e.target.value);
   on("inp-niche","input",e=>state.niche=e.target.value);
   on("inp-loc","input",e=>state.location=e.target.value);
@@ -366,8 +328,6 @@ function bindEvents(){
   on("btn-api-settings","click",()=>setState({showApiModal:true}));
   on("btn-free","click",()=>setState({filterFree:!state.filterFree}));
   on("btn-reset-chk","click",()=>setState({checked:{}}));
-
-  // Modal
   on("btn-save-key","click",()=>{
     const k=$("api-key-input")?.value.trim();
     if(!k){showToast("API key daalo pehle","error");return;}
@@ -377,18 +337,12 @@ function bindEvents(){
   on("btn-close-modal","click",()=>setState({showApiModal:false}));
   on("modal-overlay","click",e=>{if(e.target.id==="modal-overlay")setState({showApiModal:false});});
   const ki=$("api-key-input");
-  if(ki) ki.addEventListener("keydown",e=>{if(e.key==="Enter"){const k=ki.value.trim();if(k)setState({apiKey:k,showApiModal:false}),setTimeout(analyze,100);}});
-
+  if(ki)ki.addEventListener("keydown",e=>{if(e.key==="Enter"){const k=ki.value.trim();if(k){setState({apiKey:k,showApiModal:false});setTimeout(analyze,100);}}});
   document.querySelectorAll("[data-tab]").forEach(el=>el.addEventListener("click",()=>setState({tab:el.dataset.tab})));
-  document.querySelectorAll("[data-comp-toggle]").forEach(el=>el.addEventListener("click",()=>{
-    const i=parseInt(el.dataset.compToggle);setState({openComp:state.openComp===i?-1:i});
-  }));
+  document.querySelectorAll("[data-comp-toggle]").forEach(el=>el.addEventListener("click",()=>{const i=parseInt(el.dataset.compToggle);setState({openComp:state.openComp===i?-1:i});}));
   document.querySelectorAll("[data-cat]").forEach(el=>el.addEventListener("click",()=>setState({filterCat:el.dataset.cat})));
-  document.querySelectorAll("[data-dir]").forEach(el=>el.addEventListener("click",()=>{
-    const n=el.dataset.dir;if(n)setState({checked:{...state.checked,[n]:!state.checked[n]}});
-  }));
+  document.querySelectorAll("[data-dir]").forEach(el=>el.addEventListener("click",()=>{const n=el.dataset.dir;if(n)setState({checked:{...state.checked,[n]:!state.checked[n]}});}));
 }
-
 render();
 </script>
 </body>
